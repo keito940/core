@@ -8,7 +8,7 @@ using Omnius.Core.Serialization.RocketPack.Internal;
 namespace Omnius.Core.Serialization.RocketPack
 {
     /// <summary>
-    /// RocketPackファイルを読み込みます
+    /// RocketPackフォーマットのデシリアライズ機能を提供します。
     /// </summary>
     public unsafe ref struct RocketPackReader
     {

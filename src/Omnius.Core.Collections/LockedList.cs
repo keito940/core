@@ -3,10 +3,6 @@ using System.Collections.Generic;
 
 namespace Omnius.Core.Collections
 {
-    /// <summary>
-    /// 読み込みしか出来ないList
-    /// </summary>
-    /// <typeparam name="TItem"></typeparam>
     public class LockedList<TItem> : IList<TItem>, ICollection<TItem>, IEnumerable<TItem>, ISynchronized
     {
         private readonly IList<TItem> _list;

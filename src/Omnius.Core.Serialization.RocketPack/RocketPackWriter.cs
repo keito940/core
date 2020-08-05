@@ -8,7 +8,7 @@ using Omnius.Core.Serialization.RocketPack.Internal;
 namespace Omnius.Core.Serialization.RocketPack
 {
     /// <summary>
-    /// RocketPackファイルを書き込みます
+    /// RocketPackフォーマットのシリアライズ機能を提供します。
     /// </summary>
     public ref struct RocketPackWriter
     {
