@@ -1,6 +1,7 @@
 using System;
+using Omnius.Core.Cryptography.Functions;
 using Omnius.Core.Cryptography.Internal;
-using Omnius.Core.Serialization.RocketPack;
+using Omnius.Core.RocketPack;
 
 namespace Omnius.Core.Cryptography
 {

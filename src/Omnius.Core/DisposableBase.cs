@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Omnius.Core
 {
@@ -15,10 +14,7 @@ namespace Omnius.Core
 
         protected void ThrowIfDisposingRequested()
         {
-            if (this.IsDisposed)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            if (this.IsDisposed) throw new ObjectDisposedException(this.GetType().FullName);
         }
 
         public void Dispose()

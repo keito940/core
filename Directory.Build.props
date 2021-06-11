@@ -2,30 +2,22 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <TargetFramework>net5.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <NoWarn>CS1591,CS1998,NU5105</NoWarn>
+    <NoWarn>CS1591,CS1998,NU5105,NU1603,NU1605</NoWarn>
     <GenerateFullPaths>true</GenerateFullPaths>
+    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
   </PropertyGroup>
-
-  <!--
-  <PropertyGroup>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <RestoreLockedMode>true</RestoreLockedMode>
-    <NoWarn>NU1603</NoWarn>
-    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
-  </PropertyGroup>
-  -->
 
   <PropertyGroup>
     <RootNamespace>$(ProjectName)</RootNamespace>
     <Title>$(ProjectName)</Title>
     <Description>$(ProjectName)</Description>
     <BuildVersion>1</BuildVersion>
-    <VersionPrefix>0.0.2</VersionPrefix>
+    <VersionPrefix>0.0.1</VersionPrefix>
     <VersionSuffix>-alpha</VersionSuffix>
     <Version>$(VersionPrefix)$(VersionSuffix).$(BuildVersion)</Version>
     <AssemblyVersion>$(VersionPrefix).$(BuildVersion)</AssemblyVersion>
@@ -70,8 +62,16 @@
     <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(MSBuildThisFileDirectory)tmp\bin\linux\$(MSBuildProjectName)\</BaseOutputPath>
   </PropertyGroup>
 
+  <!-- <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <NuGetLockFilePath>packages.lock.any.json</NuGetLockFilePath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
+    <RestoreLockedMode>true</RestoreLockedMode>
+  </PropertyGroup> -->
+
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
     <PathMap>$(RepoRoot)=.</PathMap>
   </PropertyGroup>
 

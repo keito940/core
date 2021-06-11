@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using Omnius.Core.Cryptography.Functions;
 using Omnius.Core.Cryptography.Internal;
 
 namespace Omnius.Core.Cryptography
@@ -8,10 +9,7 @@ namespace Omnius.Core.Cryptography
     {
         public static OmniCertificate Create(OmniDigitalSignature digitalSignature, ReadOnlySequence<byte> sequence)
         {
-            if (digitalSignature is null)
-            {
-                throw new ArgumentNullException(nameof(digitalSignature));
-            }
+            if (digitalSignature is null) throw new ArgumentNullException(nameof(digitalSignature));
 
             ReadOnlyMemory<byte> value;
 

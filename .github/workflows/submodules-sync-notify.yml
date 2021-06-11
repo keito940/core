@@ -1,0 +1,26 @@
+name: Submodules Sync Notify
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  notify:
+    name: Submodules Sync Notify
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Create GitHub dispatch event
+      env:
+        CI_TOKEN: ${{ secrets.PAT }}
+        PARENT_REPO: omnius-labs/xeus
+      run: |
+        curl --request POST 'https://api.github.com/repos/${{ secrets.PARENT_REPO }}/dispatches' \
+        --header 'Authorization: token ${{ secrets.CI_TOKEN }}' \
+        --header 'Content-Type: application/json' \
+        --data-raw '{
+          "event_type": "core-repo-updated"
+        }'

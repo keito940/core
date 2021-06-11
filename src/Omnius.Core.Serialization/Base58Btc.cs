@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using Omnius.Core;
 
 namespace Omnius.Core.Serialization
 {
@@ -25,119 +24,11 @@ namespace Omnius.Core.Serialization
             47,48,49,50,51,52,53,54, 55,56,57,-1,-1,-1,-1,-1,
         };
 
-        public bool TryEncode(ReadOnlySpan<byte> span, out byte[] text, bool includePrefix = false)
-        {
-            text = Array.Empty<byte>();
-
-            if (span.IsEmpty)
-            {
-                return true;
-            }
-
-            // Skip & count leading zeroes.
-            int zeroCount = 0;
-
-            fixed (byte* p_segment_fixed = span)
-            {
-                byte* p_segment_start = p_segment_fixed;
-                byte* p_segment_end = p_segment_fixed + span.Length;
-
-                while (p_segment_start != p_segment_end && *p_segment_start == 0)
-                {
-                    zeroCount++;
-                    p_segment_start++;
-                }
-            }
-
-            int length = 0;
-
-            // Allocate enough space in big-endian base58 representation.
-            int b58Length = (span.Length - zeroCount) * 138 / 100 + 1; // log(256) / log(58), rounded up.
-
-            using (var b58 = MemoryPool<byte>.Shared.Rent(b58Length))
-            {
-                BytesOperations.Zero(b58.Memory.Span);
-
-                fixed (byte* p_b58_fixed = b58.Memory.Span)
-                {
-                    // Process the bytes.
-                    fixed (byte* p_segment_fixed = span)
-                    {
-                        byte* p_segment_start = p_segment_fixed;
-                        byte* p_segment_end = p_segment_fixed + span.Length;
-
-                        while (p_segment_start != p_segment_end)
-                        {
-                            int carry = *p_segment_start;
-                            int i = 0;
-
-                            // Apply "b58 = b58 * 256 + ch".
-                            byte* p_b58_start = (p_b58_fixed + b58Length) - 1;
-                            byte* p_b58_end = p_b58_fixed - 1;
-
-                            while (p_b58_start != p_b58_end && (carry != 0 || i < length))
-                            {
-                                carry += 256 * (*p_b58_start);
-                                *p_b58_start = (byte)(carry % 58);
-                                carry /= 58;
-
-                                p_b58_start--;
-                                i++;
-                            }
-
-                            length = i;
-                            p_segment_start++;
-                        }
-                    }
-
-                    {
-                        byte* p_b58_start = p_b58_fixed + (b58Length - length);
-                        byte* p_b58_end = p_b58_start + length;
-
-                        // Skip leading zeroes in base58 result.
-                        while (p_b58_start != p_b58_end && *p_b58_start == 0)
-                        {
-                            p_b58_start++;
-                        }
-
-                        var result = new byte[(includePrefix ? 1 : 0) + zeroCount + (p_b58_end - p_b58_start)];
-
-                        if (includePrefix)
-                        {
-                            result[0] = (byte)'z';
-                        }
-
-                        fixed (byte* p_result_fixed = result)
-                        {
-                            byte* p_result_start = p_result_fixed;
-
-                            for (int i = zeroCount - 1; i >= 0; i--)
-                            {
-                                *p_result_start++ = (byte)'1';
-                            }
-
-                            while (p_b58_start != p_b58_end)
-                            {
-                                *p_result_start++ = (byte)_base58Chars[*p_b58_start++];
-                            }
-                        }
-
-                        text = result;
-                    }
-                }
-            }
-
-            return true;
-        }
-
         public bool TryEncode(ReadOnlySequence<byte> sequence, out byte[] text, bool includePrefix = false)
         {
             text = Array.Empty<byte>();
 
-            if (sequence.IsEmpty)
-            {
-                return true;
-            }
+            if (sequence.IsEmpty) return true;
 
             // Skip & count leading zeroes.
             int zeroCount = 0;
@@ -160,7 +51,7 @@ namespace Omnius.Core.Serialization
             int length = 0;
 
             // Allocate enough space in big-endian base58 representation.
-            int b58Length = (int)(sequence.Length - zeroCount) * 138 / 100 + 1; // log(256) / log(58), rounded up.
+            int b58Length = ((int)(sequence.Length - zeroCount) * 138 / 100) + 1; // log(256) / log(58), rounded up.
 
             using (var b58 = MemoryPool<byte>.Shared.Rent(b58Length))
             {
@@ -213,14 +104,14 @@ namespace Omnius.Core.Serialization
 
                         var result = new byte[(includePrefix ? 1 : 0) + zeroCount + (p_b58_end - p_b58_start)];
 
-                        if (includePrefix)
-                        {
-                            result[0] = (byte)'z';
-                        }
-
                         fixed (byte* p_result_fixed = result)
                         {
                             byte* p_result_start = p_result_fixed;
+
+                            if (includePrefix)
+                            {
+                                *p_result_start++ = (byte)'z';
+                            }
 
                             for (int i = zeroCount - 1; i >= 0; i--)
                             {
@@ -243,15 +134,9 @@ namespace Omnius.Core.Serialization
 
         public bool TryDecode(ReadOnlySpan<byte> text, IBufferWriter<byte> bufferWriter)
         {
-            if (bufferWriter == null)
-            {
-                throw new ArgumentNullException(nameof(bufferWriter));
-            }
+            if (bufferWriter == null) throw new ArgumentNullException(nameof(bufferWriter));
 
-            if (text.IsEmpty)
-            {
-                return true;
-            }
+            if (text.IsEmpty) return true;
 
             // Skip and count leading '1's.
             int zeroCount = 0;
@@ -271,7 +156,7 @@ namespace Omnius.Core.Serialization
             int length = 0;
 
             // Allocate enough space in big-endian base256 representation.
-            int b256Length = (text.Length - zeroCount) * 733 / 1000 + 1; // log(58) / log(256), rounded up.
+            int b256Length = ((text.Length - zeroCount) * 733 / 1000) + 1; // log(58) / log(256), rounded up.
 
             using (var b256 = MemoryPool<byte>.Shared.Rent(b256Length))
             {

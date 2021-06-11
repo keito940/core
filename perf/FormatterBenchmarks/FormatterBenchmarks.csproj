@@ -9,14 +9,14 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
-    <PackageReference Include="MessagePack" Version="2.1.165" />
-    <PackageReference Include="NLog" Version="4.7.3" />
+    <PackageReference Include="MessagePack" Version="2.2.85" />
+    <PackageReference Include="NLog" Version="4.7.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Omnius.Core\Omnius.Core.csproj" />
     <ProjectReference Include="..\..\src\Omnius.Core.Collections\Omnius.Core.Collections.csproj" />
-    <ProjectReference Include="..\..\src\Omnius.Core.Serialization.RocketPack\Omnius.Core.Serialization.RocketPack.csproj" />
+    <ProjectReference Include="..\..\src\Omnius.Core.RocketPack\Omnius.Core.RocketPack.csproj" />
     <ProjectReference Include="..\..\src\Omnius.Core.Serialization\Omnius.Core.Serialization.csproj" />
   </ItemGroup>
 

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using Omnius.Core.Internal;
 
 namespace Omnius.Core.Extensions
 {
@@ -9,15 +7,8 @@ namespace Omnius.Core.Extensions
     {
         public static void AddRange<T>(this IList<T> list, IEnumerable<T> items)
         {
-            if (list == null)
-            {
-                throw new ArgumentNullException(nameof(list));
-            }
-
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            if (list == null) throw new ArgumentNullException(nameof(list));
+            if (items == null) throw new ArgumentNullException(nameof(items));
 
             foreach (var item in items)
             {

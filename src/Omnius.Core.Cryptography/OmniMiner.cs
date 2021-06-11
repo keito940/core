@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Omnius.Core;
+using Omnius.Core.Cryptography.Functions;
 using Omnius.Core.Helpers;
 
 namespace Omnius.Core.Cryptography
@@ -15,31 +15,24 @@ namespace Omnius.Core.Cryptography
     {
         public static async ValueTask<OmniHashcash> Create(ReadOnlySequence<byte> sequence, ReadOnlyMemory<byte> key, OmniHashcashAlgorithmType hashcashAlgorithmType, int limit, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            if (!EnumHelper.IsValid(hashcashAlgorithmType))
+            if (!EnumHelper.IsValid(hashcashAlgorithmType)) throw new ArgumentException(nameof(OmniHashcashAlgorithmType));
+
+            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+
+            if (hashcashAlgorithmType == OmniHashcashAlgorithmType.Sha2_256)
             {
-                throw new ArgumentException(nameof(OmniHashcashAlgorithmType));
+                var target = Hmac_Sha2_256.ComputeHash(sequence, key.Span);
+                var hashcashKey = MinerHelper.Compute_Simple_Sha2_256(target, limit, timeout, cancellationToken);
+
+                return new OmniHashcash(OmniHashcashAlgorithmType.Sha2_256, hashcashKey);
             }
 
-            return await Task.Run(() =>
-            {
-                if (hashcashAlgorithmType == OmniHashcashAlgorithmType.Sha2_256)
-                {
-                    var target = Hmac_Sha2_256.ComputeHash(sequence, key.Span);
-                    var hashcashKey = MinerHelper.Compute_Simple_Sha2_256(target, limit, timeout, cancellationToken);
-
-                    return new OmniHashcash(OmniHashcashAlgorithmType.Sha2_256, hashcashKey);
-                }
-
-                throw new NotSupportedException(nameof(hashcashAlgorithmType));
-            }, cancellationToken);
+            throw new NotSupportedException(nameof(hashcashAlgorithmType));
         }
 
         public static uint Verify(OmniHashcash hashcash, ReadOnlySequence<byte> sequence, ReadOnlyMemory<byte> key)
         {
-            if (hashcash is null)
-            {
-                throw new ArgumentNullException(nameof(hashcash));
-            }
+            if (hashcash is null) throw new ArgumentNullException(nameof(hashcash));
 
             if (hashcash.AlgorithmType == OmniHashcashAlgorithmType.Sha2_256)
             {
@@ -71,7 +64,6 @@ namespace Omnius.Core.Cryptography
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-
                     if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
                     {
                         _path = "hashcash.x64";
@@ -89,15 +81,8 @@ namespace Omnius.Core.Cryptography
 
             public static byte[] Compute_Simple_Sha2_256(ReadOnlySpan<byte> value, int limit, TimeSpan timeout, CancellationToken cancellationToken)
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                if (value.Length != 32)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value.Length != 32) throw new ArgumentOutOfRangeException(nameof(value));
 
                 if (limit < 0)
                 {
@@ -112,7 +97,7 @@ namespace Omnius.Core.Cryptography
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
-                    Arguments = $"--type=simple_sha2_256 --value={Convert.ToBase64String(value)}"
+                    Arguments = $"--type=simple_sha2_256 --value={Convert.ToBase64String(value)}",
                 };
 
                 int difficulty = 0;
@@ -120,34 +105,37 @@ namespace Omnius.Core.Cryptography
 
                 using (var process = Process.Start(info))
                 {
+                    if (process is null) throw new Exception("Failed to Process.Start()");
+
                     process.PriorityClass = ProcessPriorityClass.Idle;
 
-                    var readTask = Task.Run(() =>
-                    {
-                        try
+                    var readTask = Task.Run(
+                        () =>
                         {
-                            while (!process.HasExited)
+                            try
                             {
-                                var line = process.StandardOutput.ReadLine();
-                                if (line is null) return;
+                                while (!process.HasExited)
+                                {
+                                    var line = process.StandardOutput.ReadLine();
+                                    if (line is null) return;
 
-                                var result = line.Split(" ");
-                                difficulty = int.Parse(result[0]);
-                                key = Convert.FromBase64String(result[1]);
+                                    var result = line.Split(" ");
+                                    difficulty = int.Parse(result[0]);
+                                    key = Convert.FromBase64String(result[1]);
+                                }
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Debug(e);
-                        }
-                    });
-
-                    var writeTask = Task.Run(() =>
-                    {
-                        try
-                        {
-                            using (var w = new StreamWriter(process.StandardInput.BaseStream, new UTF8Encoding(false)))
+                            catch (Exception e)
                             {
+                                _logger.Debug(e);
+                            }
+                        }, cancellationToken);
+
+                    var writeTask = Task.Run(
+                        () =>
+                        {
+                            try
+                            {
+                                using var w = new StreamWriter(process.StandardInput.BaseStream, new UTF8Encoding(false));
                                 w.NewLine = "\n";
 
                                 while (!process.HasExited && !cancellationToken.WaitHandle.WaitOne(1000) && sw.Elapsed < timeout && difficulty < limit)
@@ -159,12 +147,11 @@ namespace Omnius.Core.Cryptography
                                 w.WriteLine("e");
                                 w.Flush();
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Debug(e);
-                        }
-                    });
+                            catch (Exception e)
+                            {
+                                _logger.Debug(e);
+                            }
+                        }, cancellationToken);
 
                     Task.WaitAll(readTask, writeTask);
                 }
@@ -174,25 +161,10 @@ namespace Omnius.Core.Cryptography
 
             public static uint Verify_Simple_Sha2_256(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
-
-                if (key.Length != 32)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(key));
-                }
-
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                if (value.Length != 32)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                if (key == null) throw new ArgumentNullException(nameof(key));
+                if (key.Length != 32) throw new ArgumentOutOfRangeException(nameof(key));
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value.Length != 32) throw new ArgumentOutOfRangeException(nameof(value));
 
                 Span<byte> buffer = stackalloc byte[64];
 
@@ -219,8 +191,8 @@ namespace Omnius.Core.Cryptography
                         }
                     }
                 }
-            End:
 
+            End:
                 return count;
             }
         }
@@ -228,8 +200,19 @@ namespace Omnius.Core.Cryptography
 
     public class MinerException : Exception
     {
-        public MinerException() : base() { }
-        public MinerException(string message) : base(message) { }
-        public MinerException(string message, Exception innerException) : base(message, innerException) { }
+        public MinerException()
+            : base()
+        {
+        }
+
+        public MinerException(string message)
+            : base(message)
+        {
+        }
+
+        public MinerException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 }

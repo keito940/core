@@ -5,7 +5,6 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Omnius.Core.Internal;
 
 namespace Omnius.Core.Extensions
 {
@@ -47,10 +46,7 @@ namespace Omnius.Core.Extensions
 
                 foreach (var i in items)
                 {
-                    if (ReferenceEquals(i, item))
-                    {
-                        return index;
-                    }
+                    if (ReferenceEquals(i, item)) return index;
 
                     ++index;
                 }
@@ -74,20 +70,9 @@ namespace Omnius.Core.Extensions
         // http://neue.cc/2014/03/14_448.html
         public static async Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> action, int concurrency, CancellationToken cancellationToken = default, bool configureAwait = false)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException("source");
-            }
-
-            if (action == null)
-            {
-                throw new ArgumentNullException("action");
-            }
-
-            if (concurrency <= 0)
-            {
-                throw new ArgumentOutOfRangeException("concurrency must be greater than 1.");
-            }
+            if (source == null) throw new ArgumentNullException("source");
+            if (action == null) throw new ArgumentNullException("action");
+            if (concurrency <= 0) throw new ArgumentOutOfRangeException("concurrency must be greater than 1.");
 
             using (var semaphore = new SemaphoreSlim(initialCount: concurrency, maxCount: concurrency))
             {
@@ -96,10 +81,7 @@ namespace Omnius.Core.Extensions
 
                 foreach (var item in source)
                 {
-                    if (exceptionCount > 0)
-                    {
-                        break;
-                    }
+                    if (exceptionCount > 0) break;
 
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -126,6 +108,15 @@ namespace Omnius.Core.Extensions
 
                 await Task.WhenAll(tasks.ToArray()).ConfigureAwait(configureAwait);
             }
+        }
+
+        private static readonly Lazy<Random> _random = new(() => new Random());
+
+        public static IEnumerable<T> Randomize<T>(this IEnumerable<T> items)
+        {
+            var array = items.ToList();
+            _random.Value.Shuffle(array);
+            return array;
         }
     }
 }

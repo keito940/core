@@ -1,7 +1,7 @@
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Omnius.Core;
 
 namespace Omnius.Core.Serialization.Extensions
 {
@@ -9,24 +9,10 @@ namespace Omnius.Core.Serialization.Extensions
     {
         private static readonly Lazy<UTF8Encoding> _utf8Encoding = new Lazy<UTF8Encoding>(() => new UTF8Encoding(false));
 
-        public static bool TryEncode(this IBytesToUtf8StringConverter converter, ReadOnlySpan<byte> span, out string text, bool includePrefix = false)
+        public static bool TryEncode(this IBytesToUtf8StringConverter converter, ReadOnlySequence<byte> sequence, [NotNullWhen(true)] out string? text, bool includePrefix = false)
         {
-            if (!converter.TryEncode(span, out var utf8string, includePrefix))
-            {
-                throw new FormatException(nameof(span));
-            }
-
-            text = _utf8Encoding.Value.GetString(utf8string);
-
-            return true;
-        }
-
-        public static bool TryEncode(this IBytesToUtf8StringConverter converter, ReadOnlySequence<byte> sequence, out string text, bool includePrefix = false)
-        {
-            if (!converter.TryEncode(sequence, out var utf8string, includePrefix))
-            {
-                throw new FormatException(nameof(sequence));
-            }
+            text = null;
+            if (!converter.TryEncode(sequence, out var utf8string, includePrefix)) return false;
 
             text = _utf8Encoding.Value.GetString(utf8string);
 
@@ -39,19 +25,10 @@ namespace Omnius.Core.Serialization.Extensions
             {
                 var length = _utf8Encoding.Value.GetBytes(text, recyclableMemory.Memory.Span);
 
-                if (!converter.TryDecode(recyclableMemory.Memory.Span.Slice(0, length), bufferWriter))
-                {
-                    throw new FormatException(nameof(text));
-                }
+                if (!converter.TryDecode(recyclableMemory.Memory.Span.Slice(0, length), bufferWriter)) return false;
             }
 
             return true;
-        }
-
-        public static byte[] BytesToUtf8String(this IBytesToUtf8StringConverter converter, ReadOnlySpan<byte> span)
-        {
-            converter.TryEncode(span, out var text);
-            return text;
         }
 
         public static byte[] BytesToUtf8String(this IBytesToUtf8StringConverter converter, ReadOnlySequence<byte> sequence)
@@ -60,42 +37,32 @@ namespace Omnius.Core.Serialization.Extensions
             return text;
         }
 
-        public static string BytesToString(this IBytesToUtf8StringConverter converter, ReadOnlySpan<byte> span)
+        public static string? BytesToString(this IBytesToUtf8StringConverter converter, ReadOnlySequence<byte> sequence)
         {
-            converter.TryEncode(span, out string text);
-            return text;
-        }
-
-        public static string BytesToString(this IBytesToUtf8StringConverter converter, ReadOnlySequence<byte> sequence)
-        {
-            converter.TryEncode(sequence, out string text);
+            converter.TryEncode(sequence, out string? text);
             return text;
         }
 
         public static byte[] StringToBytes(this IBytesToUtf8StringConverter converter, string text)
         {
-            using (var hub = new BytesHub())
-            {
-                converter.TryDecode(text, hub.Writer);
+            using var hub = new BytesHub();
+            converter.TryDecode(text, hub.Writer);
 
-                var result = new byte[hub.Writer.WrittenBytes];
-                hub.Reader.GetSequence().CopyTo(result);
+            var result = new byte[hub.Writer.WrittenBytes];
+            hub.Reader.GetSequence().CopyTo(result);
 
-                return result;
-            }
+            return result;
         }
 
         public static byte[] Utf8StringToBytes(this IBytesToUtf8StringConverter converter, ReadOnlySpan<byte> text)
         {
-            using (var hub = new BytesHub())
-            {
-                converter.TryDecode(text, hub.Writer);
+            using var hub = new BytesHub();
+            converter.TryDecode(text, hub.Writer);
 
-                var result = new byte[hub.Writer.WrittenBytes];
-                hub.Reader.GetSequence().CopyTo(result);
+            var result = new byte[hub.Writer.WrittenBytes];
+            hub.Reader.GetSequence().CopyTo(result);
 
-                return result;
-            }
+            return result;
         }
     }
 }

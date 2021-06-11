@@ -22,6 +22,13 @@ namespace Omnius.Core.Collections
 
         public T this[int index] => _array[index];
 
+        public T[] Slice(int start, int length)
+        {
+            var slice = new T[length];
+            Array.Copy(_array, start, slice, 0, length);
+            return slice;
+        }
+
         public int Count => _array.Length;
 
         public Enumerator GetEnumerator()
@@ -47,11 +54,16 @@ namespace Omnius.Core.Collections
             internal Enumerator(T[] array) => (_array, _i) = (array, -1);
 
             public T Current => _array[_i];
+
             object? IEnumerator.Current => this.Current;
 
             public bool MoveNext() => ((uint)++_i) < (uint)_array.Length;
+
             public void Reset() => throw new NotSupportedException();
-            public void Dispose() { }
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

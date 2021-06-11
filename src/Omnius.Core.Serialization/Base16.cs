@@ -21,25 +21,13 @@ namespace Omnius.Core.Serialization
         {
             if (_convertStringCase == ConvertStringCase.Lower)
             {
-                if (c < 10)
-                {
-                    return (byte)(c + '0');
-                }
-                else
-                {
-                    return (byte)(c - 10 + 'a');
-                }
+                if (c < 10) return (byte)(c + '0');
+                else return (byte)(c - 10 + 'a');
             }
             else if (_convertStringCase == ConvertStringCase.Upper)
             {
-                if (c < 10)
-                {
-                    return (byte)(c + '0');
-                }
-                else
-                {
-                    return (byte)(c - 10 + 'A');
-                }
+                if (c < 10) return (byte)(c + '0');
+                else return (byte)(c - 10 + 'A');
             }
 
             throw new NotSupportedException();
@@ -47,53 +35,11 @@ namespace Omnius.Core.Serialization
 
         private byte WordToByte(in byte c)
         {
-            if ('0' <= c && c <= '9')
-            {
-                return (byte)(c - '0');
-            }
-            else if ('a' <= c && c <= 'f')
-            {
-                return (byte)((c - 'a') + 10);
-            }
-            else if ('A' <= c && c <= 'F')
-            {
-                return (byte)((c - 'A') + 10);
-            }
+            if (c >= '0' && c <= '9') return (byte)(c - '0');
+            else if (c >= 'a' && c <= 'f') return (byte)((c - 'a') + 10);
+            else if (c >= 'A' && c <= 'F') return (byte)((c - 'A') + 10);
 
             throw new FormatException();
-        }
-
-        public bool TryEncode(ReadOnlySpan<byte> span, out byte[] text, bool includePrefix = false)
-        {
-            var result = new byte[(includePrefix ? 1 : 0) + (span.Length * 2)];
-
-            fixed (byte* p_result_fixed = result)
-            {
-                var p_result_start = p_result_fixed;
-
-                if (includePrefix)
-                {
-                    *p_result_start++ = (_convertStringCase == ConvertStringCase.Lower) ? (byte)'f' : (byte)'F';
-                }
-
-                fixed (byte* p_value_fixed = span)
-                {
-                    var p_value_start = p_value_fixed;
-                    var p_value_end = p_value_fixed + span.Length;
-
-                    while (p_value_start != p_value_end)
-                    {
-                        byte b = *p_value_start++;
-
-                        *p_result_start++ = this.ByteToWord((byte)(b >> 4));
-                        *p_result_start++ = this.ByteToWord((byte)(b & 0x0F));
-                    }
-                }
-            }
-
-            text = result;
-
-            return true;
         }
 
         public bool TryEncode(ReadOnlySequence<byte> sequence, out byte[] text, bool includePrefix = false)
@@ -134,15 +80,9 @@ namespace Omnius.Core.Serialization
 
         public bool TryDecode(ReadOnlySpan<byte> text, IBufferWriter<byte> bufferWriter)
         {
-            if (bufferWriter == null)
-            {
-                throw new ArgumentNullException(nameof(bufferWriter));
-            }
+            if (bufferWriter == null) throw new ArgumentNullException(nameof(bufferWriter));
 
-            if (text.IsEmpty)
-            {
-                return true;
-            }
+            if (text.IsEmpty) return true;
 
             fixed (byte* p_text_fixed = text)
             {

@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.IO.Pipelines;
 
 namespace Omnius.Core
 {
@@ -17,7 +16,6 @@ namespace Omnius.Core
 
             public void Reset()
             {
-
             }
 
             public long WrittenBytes => _bufferWriter.WrittenCount;

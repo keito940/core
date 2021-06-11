@@ -1,18 +1,17 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Omnius.Core
 {
-    partial class BytesHub
+    public partial class BytesHub
     {
         internal class BufferWriter : DisposableBase, IBufferWriter<byte>
         {
             private readonly IBytesPool _bytesPool;
 
-            private readonly List<byte[]> _arrays = new List<byte[]>();
-            private readonly List<Memory<byte>> _memories = new List<Memory<byte>>();
+            private readonly List<byte[]> _arrays = new();
+            private readonly List<Memory<byte>> _memories = new();
             private long _totalWrittenCount = 0;
             private Memory<byte> _currentMemory = Memory<byte>.Empty;
             private int _currentMemoryWrittenCount = 0;
@@ -53,10 +52,7 @@ namespace Omnius.Core
 
                 int length = _currentMemory.Length - _currentMemoryWrittenCount;
 
-                if (length >= sizeHint)
-                {
-                    return _currentMemory.Slice(_currentMemoryWrittenCount);
-                }
+                if (length >= sizeHint) return _currentMemory.Slice(_currentMemoryWrittenCount);
 
                 _memories.Add(_currentMemory.Slice(0, _currentMemoryWrittenCount));
 
@@ -76,10 +72,7 @@ namespace Omnius.Core
 
             public ReadOnlySequence<byte> GetSequence()
             {
-                if (_currentMemory.IsEmpty)
-                {
-                    return ReadOnlySequence<byte>.Empty;
-                }
+                if (_currentMemory.IsEmpty) return ReadOnlySequence<byte>.Empty;
 
                 MyReadOnlySequenceSegment firstSegment, lastSegment;
 
@@ -102,7 +95,7 @@ namespace Omnius.Core
                 }
             }
 
-            class MyReadOnlySequenceSegment : ReadOnlySequenceSegment<byte>
+            private class MyReadOnlySequenceSegment : ReadOnlySequenceSegment<byte>
             {
                 public MyReadOnlySequenceSegment(ReadOnlyMemory<byte> memory, MyReadOnlySequenceSegment? next, long runningIndex)
                 {

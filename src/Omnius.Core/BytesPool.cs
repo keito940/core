@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 
 namespace Omnius.Core
@@ -22,6 +21,7 @@ namespace Omnius.Core
         }
 
         public ArrayPool<byte> Array => _arrayPool;
+
         public MemoryPool<byte> Memory => _memoryPool;
     }
 }

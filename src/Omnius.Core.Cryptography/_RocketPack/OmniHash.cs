@@ -1,13 +1,34 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Buffers;
+using Omnius.Core.Cryptography.Functions;
 using Omnius.Core.Serialization;
-using Omnius.Core.Serialization.Extensions;
 
 namespace Omnius.Core.Cryptography
 {
-    partial struct OmniHash
+    public partial struct OmniHash
     {
+        public static OmniHash Create(OmniHashAlgorithmType algorithmType, ReadOnlySpan<byte> message)
+        {
+            return algorithmType switch
+            {
+                OmniHashAlgorithmType.Sha2_256 => new OmniHash(algorithmType, Sha2_256.ComputeHash(message)),
+                _ => throw new NotSupportedException(),
+            };
+        }
+
+        public bool Validate(Span<byte> message)
+        {
+            switch (this.AlgorithmType)
+            {
+                case OmniHashAlgorithmType.Sha2_256:
+                    Span<byte> v = stackalloc byte[32];
+                    Sha2_256.TryComputeHash(message, v);
+                    return BytesOperations.Equals(this.Value.Span, v);
+                default:
+                    return false;
+            }
+        }
+
         public string ToString(ConvertStringType convertStringType, ConvertStringCase convertStringCase = ConvertStringCase.Lower)
         {
             var algorithmType = this.AlgorithmType switch
@@ -15,7 +36,7 @@ namespace Omnius.Core.Cryptography
                 OmniHashAlgorithmType.Sha2_256 => "sha2-256",
                 _ => throw new NotSupportedException()
             };
-            var value = OmniBase.Encode(this.Value.Span, convertStringType, convertStringCase);
+            var value = OmniBase.Encode(new ReadOnlySequence<byte>(this.Value), convertStringType, convertStringCase);
 
             return algorithmType + ":" + value;
         }
@@ -27,7 +48,7 @@ namespace Omnius.Core.Cryptography
             var hub = new BytesHub();
             if (!OmniBase.TryDecode(text, hub.Writer)) return false;
 
-            value = OmniHash.Import(hub.Reader.GetSequence(), BytesPool.Shared);
+            value = Import(hub.Reader.GetSequence(), BytesPool.Shared);
             return true;
         }
     }

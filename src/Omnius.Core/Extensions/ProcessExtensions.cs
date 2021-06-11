@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,10 +21,7 @@ namespace Omnius.Core.Extensions
 
             try
             {
-                if (process.HasExited)
-                {
-                    return;
-                }
+                if (process.HasExited) return;
 
                 using (cancellationToken.Register(() => tcs.TrySetCanceled()))
                 {

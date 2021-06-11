@@ -1,28 +1,27 @@
-init-tools:
-	sh ./eng/init-tools.sh
-
 gen-code:
-	sh ./eng/gen-code.sh
+	bash ./eng/gen-code.sh
 
 test:
-	sh ./eng/test.sh
+	dotnet test --no-restore
 
-update: format
-	sh ./eng/update-tools.sh
+build:
+	dotnet build
 
 format:
-	dotnet tool restore
 	dotnet tool run dotnet-format
 
-gen-docfx:
-	docfx ./docs/docfx.json
+update-nugut:
+	dotnet tool run nukeeper update
 
-serve-docfx:
-	docfx ./docs/docfx.json --serve
+update-dotnet-tool:
+	bash ./eng/update-dotnet-tool.sh
+
+update-sln:
+	bash ./eng/update-sln.sh
 
 clean:
 	rm -rf ./bin
 	rm -rf ./tmp
 	rm -rf ./pub
 
-.PHONY: init-tools gen-code test update format clean
+.PHONY: test build
